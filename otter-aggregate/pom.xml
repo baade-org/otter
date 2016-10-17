@@ -39,6 +39,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		
+		<slf4j-log4j12.version>1.7.13</slf4j-log4j12.version>
 	</properties>
 
 	<distributionManagement>
@@ -73,4 +75,14 @@
 			</plugin>
 		</plugins>
 	</build>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j-log4j12.version}</version>
+		</dependency>
+	
+	</dependencies>
+	
 </project>
