@@ -1,13 +1,21 @@
 package org.baade.otter.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.baade.otter.core.session.ISession;
+import org.baade.otter.core.session.ISessionRecycle;
+import org.baade.otter.core.session.Session;
+import org.baade.otter.core.session.SessionRecycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +28,8 @@ public class ServerAccepter implements IServerAccepter {
 	private boolean isBlock = false;
 
 	// private ServerSocket serverSocket;
+	
+	private ISessionRecycle sessionRecycle;
 
 	private Selector selector;
 
@@ -27,28 +37,27 @@ public class ServerAccepter implements IServerAccepter {
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.configureBlocking(isBlock);
 		// serverSocket = serverSocketChannel.socket();
-	}
-
-	@Override
-	public void bind(InetSocketAddress inetSocketAddr) throws IOException {
-		serverSocketChannel.bind(inetSocketAddr);
+		sessionRecycle = new SessionRecycle();
 	}
 
 	@Override
 	public void bind(int port) throws IOException {
-		serverSocketChannel.bind(new InetSocketAddress(port));
+		bind(new InetSocketAddress(port));
 	}
 
 	@Override
-	public void bind(String hostname, int port) throws IOException {
-		serverSocketChannel.bind(new InetSocketAddress(hostname, port));
+	public void bind(InetAddress localInetAddress, int port) throws IOException {
+		SocketAddress localSocketAddress = new InetSocketAddress(localInetAddress, port);
+		bind(localSocketAddress);
 	}
 
 	@Override
-	public void start() throws IOException {
+	public void bind(SocketAddress localSocketAddress) throws IOException {
 		selector = Selector.open();
+		serverSocketChannel.bind(localSocketAddress);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-		LOGGER.info("ServerAccepter starting and bloking is [{}]. ", this.isBlock);
+		LOGGER.info("ServerAccepter starting and lisntened on [{}] bloking is [{}]. ", localSocketAddress.toString(),
+				this.isBlock);
 		while (true) {
 			keysHandler();
 		}
@@ -67,28 +76,33 @@ public class ServerAccepter implements IServerAccepter {
 				continue;
 			} else {
 				if (key.isConnectable()) {
-					
+					System.out.println("key.isConnectable()");
 				} else if (key.isAcceptable()) {
-
+					 System.out.println("key.isAcceptable()");
+					ServerSocketChannel ssc = (ServerSocketChannel)key.channel();
+					System.out.println(ssc);
+					SocketChannel sc = ssc.accept();
+					sc.configureBlocking(false);
+					sc.register(selector, SelectionKey.OP_READ);
+//					sc.register(selector, SelectionKey.OP_WRITE);
+					
+					ISession session = new Session(sc);
+					
+					sessionRecycle.put(session);
+					
 				} else if (key.isReadable()) {
-
+//					System.out.println("key.isReadable()");
+					SocketChannel sc = (SocketChannel)key.channel();
+					ByteBuffer buff = ByteBuffer.allocate(256);
+					if(sc.read(buff) != -1){
+						System.out.println(new String(buff.array()));
+					}
+					
 				} else if (key.isWritable()) {
-
+					System.out.println("key.isWritable()");
 				}
 			}
 
 		}
-	}
-
-	@Override
-	public void configureBlocking(boolean isBlock) throws IOException {
-		this.isBlock = isBlock;
-		serverSocketChannel.configureBlocking(isBlock);
-	}
-
-	public static void main(String[] args) throws IOException {
-		ServerAccepter sa = new ServerAccepter();
-		sa.bind("127.0.0.1", 9090);
-		sa.start();
 	}
 }

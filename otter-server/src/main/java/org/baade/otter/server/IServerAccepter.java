@@ -1,38 +1,41 @@
 package org.baade.otter.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 
+/**
+ * 
+ * @author <a href="http://otter.baade.org">Baade Otter Project</a>
+ *
+ */
 public interface IServerAccepter {
+	
+	/**
+	 * 绑定 IP 套接字地址
+	 * 
+	 * @param port 端口号
+	 */
+	public void bind(int port) throws IOException;
+	
+	/**
+	 * 绑定 IP 套接字地址（IP 地址 + 端口号）
+	 * 
+	 * @param localInetAddress
+	 * @param port 端口号
+	 */
+	public void bind(InetAddress localInetAddress, int port) throws IOException;
 
 	/**
 	 * 绑定 IP 套接字地址（IP 地址 + 端口号）
 	 * 
-	 * @param InetSocketAddr
+	 * @param localSocketAddress
 	 */
-	public void bind(InetSocketAddress inetSocketAddr) throws IOException;
-
-	/**
-	 * 绑定 IP 套接字地址
-	 * @param port 端口
-	 */
-	public void bind(int port) throws IOException ;
-
-	/**
-	 * 绑定 IP 套接字地址
-	 * @param hostname 主机名
-	 * @param port 端口
-	 */
-	public void bind(String hostname, int port) throws IOException ;
+	public void bind(SocketAddress localSocketAddress) throws IOException;
 	
-	/**
-	 * 开始运行服务端
-	 */
-	public void start() throws IOException ;
 	
-	/**
-	 * 是否阻塞
-	 * @param isBlock 是否阻塞
-	 */
-	public void configureBlocking(boolean isBlock) throws IOException ;
+	
+	
+
+	
 }

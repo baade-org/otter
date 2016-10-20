@@ -13,4 +13,12 @@
 		<artifactId>otter-aggregate</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>otter-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
 </project>

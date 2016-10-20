@@ -2,7 +2,7 @@ package org.baade.otter.core.session;
 
 public class SessionFactory {
 
-	public static ISession create(){
+	public static ISession newSession(){
 		
 		
 		return null;
