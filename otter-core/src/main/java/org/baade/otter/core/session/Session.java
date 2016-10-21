@@ -1,9 +1,12 @@
 package org.baade.otter.core.session;
 
+import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import org.baade.otter.core.disposer.IEventDisposer;
 import org.baade.otter.core.filter.IFilterChain;
 
 public class Session implements ISession {
@@ -12,8 +15,19 @@ public class Session implements ISession {
 	
 	private IFilterChain filterChain;
 	
-	public Session(SocketChannel socketChannel){
+//	private SelectionKey key;
+	
+	private IEventDisposer disposer;
+	
+	private ISessionRecycle sessionRecycle;
+	
+	public Session(SocketChannel socketChannel,
+			IEventDisposer disposer, ISessionRecycle sessionRecycle){
 		this.socketChannel = socketChannel;
+//		this.key = key;
+		this.disposer = disposer;
+		this.sessionRecycle = sessionRecycle;
+		disposer.onCreate(this);
 	}
 	
 	@Override
@@ -79,5 +93,46 @@ public class Session implements ISession {
 		}
 		return remote;
 	}
+
+	@Override
+	public void read(){
+		ByteBuffer buff = ByteBuffer.allocate(256);
+		try {
+			if(this.socketChannel.isConnected() && this.socketChannel.read(buff) != -1){
+				String str = new String(buff.array());
+				disposer.onReceived(this, str);
+			}
+		} catch (IOException e) {
+			disposer.onException(this, e);
+			close();
+		}
+	}
+
+	@Override
+	public void close() {
+		disposer.onClose(this);
+		sessionRecycle.remove(this);
+//		if(this.key != null){
+//			key.cancel();
+//		}
+		if(this.socketChannel != null){
+			try {
+				this.socketChannel.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
 	
+	@Override
+	public String toString() {
+		return this.socketChannel.toString();
+	}
+
+	@Override
+	public void write(){
+		// TODO Auto-generated method stub
+		
+	}
 }

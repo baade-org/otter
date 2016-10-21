@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 
+import org.baade.otter.core.disposer.IEventDisposer;
+
 /**
  * 
  * @author <a href="http://otter.baade.org">Baade Otter Project</a>
@@ -34,7 +36,7 @@ public interface IServerAccepter {
 	public void bind(SocketAddress localSocketAddress) throws IOException;
 	
 	
-	
+	public void setDisposer(IEventDisposer disposer);
 	
 
 	

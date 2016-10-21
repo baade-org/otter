@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -12,6 +11,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.baade.otter.core.disposer.IEventDisposer;
 import org.baade.otter.core.session.ISession;
 import org.baade.otter.core.session.ISessionRecycle;
 import org.baade.otter.core.session.Session;
@@ -26,17 +26,16 @@ public class ServerAccepter implements IServerAccepter {
 	private ServerSocketChannel serverSocketChannel;
 
 	private boolean isBlock = false;
-
-	// private ServerSocket serverSocket;
 	
 	private ISessionRecycle sessionRecycle;
+	
+	private IEventDisposer eventDisposer;
 
 	private Selector selector;
 
 	public ServerAccepter() throws IOException {
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.configureBlocking(isBlock);
-		// serverSocket = serverSocketChannel.socket();
 		sessionRecycle = new SessionRecycle();
 	}
 
@@ -53,6 +52,13 @@ public class ServerAccepter implements IServerAccepter {
 
 	@Override
 	public void bind(SocketAddress localSocketAddress) throws IOException {
+		if(localSocketAddress == null){
+			throw new IllegalArgumentException("Local SocketAddress is null.");
+		}
+		if(this.eventDisposer == null){
+			throw new IllegalArgumentException("Event Disposer is not set.");
+		}
+		
 		selector = Selector.open();
 		serverSocketChannel.bind(localSocketAddress);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -71,38 +77,35 @@ public class ServerAccepter implements IServerAccepter {
 		while (itor.hasNext()) {
 			SelectionKey key = itor.next();
 			itor.remove();
-
 			if (key.isValid() == false) {
 				continue;
 			} else {
-				if (key.isConnectable()) {
-					System.out.println("key.isConnectable()");
-				} else if (key.isAcceptable()) {
-					 System.out.println("key.isAcceptable()");
+				if (key.isAcceptable()) {
 					ServerSocketChannel ssc = (ServerSocketChannel)key.channel();
-					System.out.println(ssc);
-					SocketChannel sc = ssc.accept();
-					sc.configureBlocking(false);
-					sc.register(selector, SelectionKey.OP_READ);
-//					sc.register(selector, SelectionKey.OP_WRITE);
-					
-					ISession session = new Session(sc);
-					
+					SocketChannel socketChannel = ssc.accept();
+					ISession session = newSession(socketChannel);
 					sessionRecycle.put(session);
-					
 				} else if (key.isReadable()) {
-//					System.out.println("key.isReadable()");
-					SocketChannel sc = (SocketChannel)key.channel();
-					ByteBuffer buff = ByteBuffer.allocate(256);
-					if(sc.read(buff) != -1){
-						System.out.println(new String(buff.array()));
+					SocketChannel socketChannel = (SocketChannel)key.channel();
+					ISession session = sessionRecycle.get(socketChannel);
+					if(session != null){
+						session.read();
 					}
-					
-				} else if (key.isWritable()) {
-					System.out.println("key.isWritable()");
 				}
 			}
 
 		}
+	}
+	
+	private ISession newSession(SocketChannel socketChannel) throws IOException{
+		socketChannel.configureBlocking(false);
+		socketChannel.register(selector, SelectionKey.OP_READ);
+		return new Session(socketChannel, this.eventDisposer, sessionRecycle);
+	}
+	
+
+	@Override
+	public void setDisposer(IEventDisposer disposer) {
+		this.eventDisposer = disposer;
 	}
 }
