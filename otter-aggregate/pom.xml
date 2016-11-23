@@ -19,8 +19,8 @@
 	</licenses>
 	<developers>
 		<developer>
-			<id>zaleza</id>
-			<name>zaleza</name>
+			<id>baade</id>
+			<name>baade</name>
 			<email>zz@baade.org</email>
 		</developer>
 	</developers>
@@ -30,6 +30,7 @@
 	</issueManagement>
 	
 	<modules>
+		<module>../otter-assets</module>
 		<module>../otter-core</module>
 		<module>../otter-server</module>
 		<module>../otter-client</module>
